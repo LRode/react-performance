@@ -12,6 +12,8 @@ import {
 
 const AppStateContext = React.createContext()
 
+const AppDispatchContext = React.createContext()
+
 const initialGrid = Array.from({length: 100}, () =>
   Array.from({length: 100}, () => Math.random() * 100),
 )
@@ -39,10 +41,15 @@ function AppProvider({children}) {
     grid: initialGrid,
   })
   // 🐨 memoize this value with React.useMemo
-  const value = [state, dispatch]
+  // const value = [state, dispatch]
+  // left from when there was only one Contact provider, now we are seperating into 2
+  // const value = React.useMemo(() => [state, dispatch], [state, dispatch])
+
   return (
-    <AppStateContext.Provider value={value}>
-      {children}
+    <AppStateContext.Provider value={state}>
+      <AppDispatchContext.Provider value={dispatch}>
+        {children}
+      </AppDispatchContext.Provider>
     </AppStateContext.Provider>
   )
 }
@@ -55,8 +62,16 @@ function useAppState() {
   return context
 }
 
+function useAppDispatch() {
+  const context = React.useContext(AppDispatchContext)
+  if (!context) {
+    throw new Error('useAppDispatch must be used within the AppProvider')
+  }
+  return context
+}
+
 function Grid() {
-  const [, dispatch] = useAppState()
+  const dispatch = useAppDispatch()
   const [rows, setRows] = useDebouncedState(50)
   const [columns, setColumns] = useDebouncedState(50)
   const updateGridData = () => dispatch({type: 'UPDATE_GRID'})
@@ -74,7 +89,8 @@ function Grid() {
 Grid = React.memo(Grid)
 
 function Cell({row, column}) {
-  const [state, dispatch] = useAppState()
+  const state = useAppState()
+  const dispatch = useAppDispatch()
   const cell = state.grid[row][column]
   const handleClick = () => dispatch({type: 'UPDATE_GRID_CELL', row, column})
   return (
@@ -93,7 +109,8 @@ function Cell({row, column}) {
 Cell = React.memo(Cell)
 
 function DogNameInput() {
-  const [state, dispatch] = useAppState()
+  const state = useAppState()
+  const dispatch = useAppDispatch()
   const {dogName} = state
 
   function handleChange(event) {

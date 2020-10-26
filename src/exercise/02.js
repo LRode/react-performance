@@ -3,8 +3,8 @@
 
 import React from 'react'
 import {useCombobox} from '../use-combobox'
-import {getItems} from '../filter-cities'
-import {useForceRerender} from '../utils'
+import {getItems} from '../workerized-filter-cities'
+import {useAsync, useForceRerender} from '../utils'
 
 function Menu({
   items,
@@ -61,7 +61,18 @@ function App() {
   const [inputValue, setInputValue] = React.useState('')
 
   // 🐨 wrap getItems in a call to `React.useMemo`
-  const allItems = getItems(inputValue)
+  // const allItems = React.useMemo(() => getItems(inputValue), [inputValue]);
+
+  // Web worker version:
+  // TODO: Check out useAsync hook implementation later. Hook provided in Epic React course
+  // handles web worker asynchrony
+  // getItems is now handled by a webworker instead
+  const {data: allItems, run} = useAsync({data: [], status: 'pending'})
+
+  React.useEffect(() => {
+    run(getItems(inputValue))
+  }, [inputValue, run])
+  
   const items = allItems.slice(0, 100)
 
   const {
